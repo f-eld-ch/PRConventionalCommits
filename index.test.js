@@ -176,3 +176,149 @@ describe('generateColor', () => {
     });
 
 });
+
+describe('checkScope', () => {
+    beforeEach(() => {
+        jest.resetAllMocks();
+    });
+
+    it('should return early if commitDetail is null', async () => {
+        await myModule.checkScope(null);
+        expect(setFailed).not.toHaveBeenCalled();
+    });
+
+    it('should return early if commitDetail is undefined', async () => {
+        await myModule.checkScope(undefined);
+        expect(setFailed).not.toHaveBeenCalled();
+    });
+
+    it('should return early if scope_types input is not provided', async () => {
+        getInput.mockReturnValue('');
+        const commitDetail = { type: 'feat', scope: 'login', breaking: false };
+        
+        await myModule.checkScope(commitDetail);
+        
+        expect(setFailed).not.toHaveBeenCalled();
+    });
+
+    it('should succeed when scope is valid', async () => {
+        getInput.mockReturnValue(JSON.stringify(['login', 'signup', 'checkout']));
+        const commitDetail = { type: 'feat', scope: 'login', breaking: false };
+        
+        await myModule.checkScope(commitDetail);
+        
+        expect(setFailed).not.toHaveBeenCalled();
+    });
+
+    it('should succeed when empty scope is allowed and scope is empty', async () => {
+        getInput.mockReturnValue(JSON.stringify(['login', 'signup', '']));
+        const commitDetail = { type: 'feat', scope: '', breaking: false };
+        
+        await myModule.checkScope(commitDetail);
+        
+        expect(setFailed).not.toHaveBeenCalled();
+    });
+
+    it('should fail when scope is invalid', async () => {
+        getInput.mockReturnValue(JSON.stringify(['login', 'signup', 'checkout']));
+        const commitDetail = { type: 'feat', scope: 'invalid', breaking: false };
+        
+        await myModule.checkScope(commitDetail);
+        
+        expect(setFailed).toHaveBeenCalledWith(
+            "Invalid or missing scope: 'invalid'. Must be one of: login, signup, checkout"
+        );
+    });
+
+    it('should fail when scope is empty but not allowed', async () => {
+        getInput.mockReturnValue(JSON.stringify(['login', 'signup', 'checkout']));
+        const commitDetail = { type: 'feat', scope: '', breaking: false };
+        
+        await myModule.checkScope(commitDetail);
+        
+        expect(setFailed).toHaveBeenCalledWith(
+            "Invalid or missing scope: ''. Must be one of: login, signup, checkout"
+        );
+    });
+
+    it('should fail when scope_types input is invalid JSON', async () => {
+        getInput.mockReturnValue('invalid JSON');
+        const commitDetail = { type: 'feat', scope: 'login', breaking: false };
+        
+        await myModule.checkScope(commitDetail);
+        
+        expect(setFailed).toHaveBeenCalledWith('Invalid scope_types input. Expecting a JSON array.');
+    });
+
+    it('should fail when scope_types input is not an array', async () => {
+        getInput.mockReturnValue('{"login": "value"}');
+        const commitDetail = { type: 'feat', scope: 'login', breaking: false };
+        
+        await myModule.checkScope(commitDetail);
+        
+        expect(setFailed).toHaveBeenCalledWith('Invalid scope_types input. Expecting a JSON array.');
+    });
+});
+
+describe('getScopeTypes (via checkScope)', () => {
+    beforeEach(() => {
+        jest.resetAllMocks();
+    });
+
+    it('should handle when scope_types input is not provided', async () => {
+        getInput.mockReturnValue('');
+        const commitDetail = { type: 'feat', scope: 'login', breaking: false };
+        
+        await myModule.checkScope(commitDetail);
+        
+        expect(setFailed).not.toHaveBeenCalled();
+    });
+
+    it('should handle valid JSON array scope_types', async () => {
+        getInput.mockReturnValue(JSON.stringify(['login', 'signup', 'checkout']));
+        const commitDetail = { type: 'feat', scope: 'login', breaking: false };
+        
+        await myModule.checkScope(commitDetail);
+        
+        expect(setFailed).not.toHaveBeenCalled();
+    });
+
+    it('should handle empty array scope_types', async () => {
+        getInput.mockReturnValue(JSON.stringify([]));
+        const commitDetail = { type: 'feat', scope: 'login', breaking: false };
+        
+        await myModule.checkScope(commitDetail);
+        
+        expect(setFailed).toHaveBeenCalledWith(
+            "Invalid or missing scope: 'login'. Must be one of: "
+        );
+    });
+
+    it('should handle array with empty string scope', async () => {
+        getInput.mockReturnValue(JSON.stringify(['login', 'signup', '']));
+        const commitDetail = { type: 'feat', scope: '', breaking: false };
+        
+        await myModule.checkScope(commitDetail);
+        
+        expect(setFailed).not.toHaveBeenCalled();
+    });
+
+    it('should fail when JSON is invalid', async () => {
+        getInput.mockReturnValue('invalid JSON');
+        const commitDetail = { type: 'feat', scope: 'login', breaking: false };
+        
+        await myModule.checkScope(commitDetail);
+        
+        expect(setFailed).toHaveBeenCalledWith('Invalid scope_types input. Expecting a JSON array.');
+    });
+
+    it('should fail when JSON is not an array', async () => {
+        getInput.mockReturnValue(JSON.stringify({ login: 'value' }));
+        const commitDetail = { type: 'feat', scope: 'login', breaking: false };
+        
+        await myModule.checkScope(commitDetail);
+        
+        expect(setFailed).toHaveBeenCalledWith('Invalid scope_types input. Expecting a JSON array.');
+    });
+});
+

@@ -8,6 +8,7 @@ const githubApi = require('./githubapi');
  */
 async function run() {
     const commitDetail = await checkConventionalCommits();
+    await checkScope(commitDetail);
     await checkTicketNumber(commitDetail);
     const pr = context.payload.pull_request;
     await applyLabel(pr, commitDetail);
@@ -66,7 +67,41 @@ function getTaskTypes() {
     }
 }
 
+/**
+ * Check the scope on the PR title.
+ */
+async function checkScope(commitDetail) {
+    if (!commitDetail) {
+        return;
+    }
+    
+    const scopeTypes = getScopeTypes();
+    if (scopeTypes === null) {
+        return;
+    }
 
+    if (!scopeTypes.includes(commitDetail.scope)) {
+        setFailed(`Invalid or missing scope: '${commitDetail.scope}'. Must be one of: ${scopeTypes.join(', ')}`);
+    }
+}
+
+function getScopeTypes() {
+    const scopeTypesInput = getInput('scope_types');
+    if (!scopeTypesInput) {
+        return null;
+    }
+
+    try {
+        const scopeTypeList = JSON.parse(scopeTypesInput);
+        if (!Array.isArray(scopeTypeList)) {
+            throw new Error('Invalid format'); // Ensure the parsed result is an array
+        }
+        return scopeTypeList;
+    } catch (err) {
+        setFailed('Invalid scope_types input. Expecting a JSON array.');
+        return null;
+    }
+}
 
 /**
  * Check the ticket number based on the PR title and a provided regex.
@@ -190,6 +225,7 @@ run().catch(err => setFailed(err.message));
 module.exports = {
     run,
     checkConventionalCommits,
+    checkScope,
     checkTicketNumber,
     applyLabel,
     updateLabels

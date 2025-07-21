@@ -5,6 +5,9 @@ inputs:
   task_types:
     description: 'An array of task types. Example: ["feat","fix","docs","test","ci","refactor","perf","chore","revert"]'
     required: true
+  scope_types:
+    description: 'An array of valid scope types. If omitted, any scope is allowed. If given, include the empty scope with "". Example: ["login","signup","checkout","payment", ""]'
+    required: false
   ticket_key_regex:
     description: 'Regular expression to match issue number in PR title, by default does not validate. Example ^PROJECT-\d{2,5}$'
     required: false
